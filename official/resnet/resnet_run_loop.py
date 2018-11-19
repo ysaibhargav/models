@@ -27,6 +27,8 @@ import functools
 import math
 import multiprocessing
 import os
+import pickle
+import numpy as np
 
 # pylint: disable=g-bad-import-order
 from absl import flags
@@ -272,7 +274,7 @@ def resnet_model_fn(features, labels, mode, model_class,
                     resnet_size, weight_decay, learning_rate_fn, momentum,
                     data_format, resnet_version, loss_scale,
                     loss_filter_fn=None, dtype=resnet_model.DEFAULT_DTYPE,
-                    fine_tune=False):
+                    vocab=None, fine_tune=False):
   """Shared functionality for different resnet model_fns.
 
   Initializes the ResnetModel representing the model layers
@@ -332,6 +334,26 @@ def resnet_model_fn(features, labels, mode, model_class,
       'classes': (1 + tf.math.sign(logits)) / 2,
       'probabilities': tf.math.sigmoid(logits, name='probabilities')
   }
+
+  bool_preds = tf.cast(predictions['classes'], tf.bool)
+  bool_labels = tf.cast(labels, tf.bool)
+
+  if mode == tf.estimator.ModeKeys.VALIDATION:
+      with tf.device("/cpu:0"):
+          vocab = tf.convert_to_tensor(vocab)
+          multiply = tf.constant([32])
+          matrix = tf.reshape(tf.tile(vocab, multiply), [ multiply[0], tf.shape(vocab)[0] ])
+
+          pred_ingrs = tf.boolean_mask(matrix, bool_preds)
+          actual_ingrs = tf.boolean_mask(matrix, bool_labels)
+
+          pred_ingrs = tf.map_fn(lambda x: tf.strings.reduce_join(x, separator=' | '),
+            pred_ingrs, dtype=tf.string, infer_shape=False)
+          actual_ingrs = tf.map_fn(lambda x: tf.strings.reduce_join(x, separator=' | '),
+            actual_ingrs, dtype=tf.string, infer_shape=False)
+
+          tf.summary.text('actual_ingredients', actual_ingrs)
+          tf.summary.text('predicted_ingredients', actual_ingrs)
 
   if mode == tf.estimator.ModeKeys.PREDICT:
     # Return the predictions and the specification for serving a SavedModel
@@ -488,6 +510,9 @@ def resnet_main(
   else:
     warm_start_settings = None
 
+  PKL_PATH = 'data/salad1_vocab.pkl'
+  vocab, _ = pickle.load(open(PKL_PATH, 'rb'))
+  vocab = list(vocab)
   classifier = tf.estimator.Estimator(
       model_fn=model_function, model_dir=flags_obj.model_dir, config=run_config,
       warm_start_from=warm_start_settings, params={
@@ -497,6 +522,7 @@ def resnet_main(
           'resnet_version': int(flags_obj.resnet_version),
           'loss_scale': flags_core.get_loss_scale(flags_obj),
           'dtype': flags_core.get_tf_dtype(flags_obj),
+          'vocab': vocab,
           'fine_tune': flags_obj.fine_tune
       })
 
