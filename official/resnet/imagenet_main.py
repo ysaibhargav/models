@@ -44,6 +44,7 @@ _SHUFFLE_BUFFER = 10000
 
 DATASET_NAME = 'ImageNet'
 
+"""python imagenet_main.py --data_dir data/scratch/ --num_gpus 4"""
 ###############################################################################
 # Data processing
 ###############################################################################
@@ -125,7 +126,7 @@ def parse_record(raw_record, is_training, dtype):
 
   image = imagenet_preprocessing.preprocess_image(
       image_buffer=image_buffer,
-      bbox=None,
+      bbox=tf.constant([0.0, 0.0, 1.0, 1.0], dtype=dtype, shape=[1, 1, 4]),
       output_height=_DEFAULT_IMAGE_SIZE,
       output_width=_DEFAULT_IMAGE_SIZE,
       num_channels=_NUM_CHANNELS,

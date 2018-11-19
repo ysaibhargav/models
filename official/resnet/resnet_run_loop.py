@@ -312,6 +312,7 @@ def resnet_model_fn(features, labels, mode, model_class,
     current mode.
   """
 
+  labels = tf.cast(labels, dtype=tf.float32)
   # Generate a summary node for the images
   tf.summary.image('images', features, max_outputs=6)
   # Checks that features/images have same data type being used for calculations.
@@ -345,6 +346,7 @@ def resnet_model_fn(features, labels, mode, model_class,
   cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
       logits=logits, labels=labels)
   cross_entropy = tf.reduce_mean(cross_entropy, axis=-1)
+  cross_entropy = tf.reduce_sum(cross_entropy)
 
   # Create a tensor named cross_entropy for logging purposes.
   tf.identity(cross_entropy, name='cross_entropy')
@@ -414,8 +416,9 @@ def resnet_model_fn(features, labels, mode, model_class,
     train_op = tf.group(minimize_op, update_ops)
   else:
     train_op = None
-
   accuracy = tf.metrics.accuracy(labels, predictions['classes'])
+  #accuracy = tf.metrics.accuracy(tf.reshape(labels, [-1]),
+  #        tf.reshape(predictions['classes'], [-1]))
   metrics = {'accuracy': accuracy}
 
   # Create a tensor named train_accuracy for logging purposes
