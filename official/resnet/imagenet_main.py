@@ -32,11 +32,11 @@ from official.resnet import resnet_run_loop
 
 _DEFAULT_IMAGE_SIZE = 224
 _NUM_CHANNELS = 3
-_NUM_CLASSES = 1001
+_NUM_CLASSES = 10719
 
 _NUM_IMAGES = {
-    'train': 1281167,
-    'validation': 50000,
+    'train': 37867,
+    'validation': 4212,
 }
 
 _NUM_TRAIN_FILES = 1024
@@ -51,11 +51,11 @@ def get_filenames(is_training, data_dir):
   """Return filenames for dataset."""
   if is_training:
     return [
-        os.path.join(data_dir, 'train-%05d-of-01024' % i)
+        os.path.join(data_dir, 'TRAIN', 'TRAIN-%05d-of-01024' % i)
         for i in range(_NUM_TRAIN_FILES)]
   else:
     return [
-        os.path.join(data_dir, 'validation-%05d-of-00128' % i)
+        os.path.join(data_dir, 'VALIDATION', 'VALIDATION-%05d-of-00128' % i)
         for i in range(128)]
 
 
@@ -97,36 +97,13 @@ def _parse_example_proto(example_serialized):
   feature_map = {
       'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
                                           default_value=''),
-      'image/class/label': tf.FixedLenFeature([], dtype=tf.int64,
-                                              default_value=-1),
-      'image/class/text': tf.FixedLenFeature([], dtype=tf.string,
-                                             default_value=''),
+      'image/ingrs': tf.VarLenFeature(dtype=tf.int64)
   }
-  sparse_float32 = tf.VarLenFeature(dtype=tf.float32)
-  # Sparse features in Example proto.
-  feature_map.update(
-      {k: sparse_float32 for k in ['image/object/bbox/xmin',
-                                   'image/object/bbox/ymin',
-                                   'image/object/bbox/xmax',
-                                   'image/object/bbox/ymax']})
 
   features = tf.parse_single_example(example_serialized, feature_map)
-  label = tf.cast(features['image/class/label'], dtype=tf.int32)
+  label = tf.sparse_to_indicator(features['image/ingrs'], _NUM_CLASSES)
 
-  xmin = tf.expand_dims(features['image/object/bbox/xmin'].values, 0)
-  ymin = tf.expand_dims(features['image/object/bbox/ymin'].values, 0)
-  xmax = tf.expand_dims(features['image/object/bbox/xmax'].values, 0)
-  ymax = tf.expand_dims(features['image/object/bbox/ymax'].values, 0)
-
-  # Note that we impose an ordering of (y, x) just to make life difficult.
-  bbox = tf.concat([ymin, xmin, ymax, xmax], 0)
-
-  # Force the variable number of bounding boxes into the shape
-  # [1, num_boxes, coords].
-  bbox = tf.expand_dims(bbox, 0)
-  bbox = tf.transpose(bbox, [0, 2, 1])
-
-  return features['image/encoded'], label, bbox
+  return features['image/encoded'], label
 
 
 def parse_record(raw_record, is_training, dtype):
@@ -144,11 +121,11 @@ def parse_record(raw_record, is_training, dtype):
   Returns:
     Tuple with processed image tensor and one-hot-encoded label tensor.
   """
-  image_buffer, label, bbox = _parse_example_proto(raw_record)
+  image_buffer, label = _parse_example_proto(raw_record)
 
   image = imagenet_preprocessing.preprocess_image(
       image_buffer=image_buffer,
-      bbox=bbox,
+      bbox=None,
       output_height=_DEFAULT_IMAGE_SIZE,
       output_width=_DEFAULT_IMAGE_SIZE,
       num_channels=_NUM_CHANNELS,
