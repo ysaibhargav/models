@@ -328,8 +328,8 @@ def resnet_model_fn(features, labels, mode, model_class,
   logits = tf.cast(logits, tf.float32)
 
   predictions = {
-      'classes': tf.argmax(logits, axis=1),
-      'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+      'classes': (1 + tf.math.sign(logits)) / 2,
+      'probabilities': tf.math.sigmoid(logits, name='probabilities')
   }
 
   if mode == tf.estimator.ModeKeys.PREDICT:
@@ -342,8 +342,9 @@ def resnet_model_fn(features, labels, mode, model_class,
         })
 
   # Calculate loss, which includes softmax cross entropy and L2 regularization.
-  cross_entropy = tf.losses.sparse_softmax_cross_entropy(
+  cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
       logits=logits, labels=labels)
+  cross_entropy = tf.reduce_mean(cross_entropy, axis=-1)
 
   # Create a tensor named cross_entropy for logging purposes.
   tf.identity(cross_entropy, name='cross_entropy')
@@ -415,18 +416,11 @@ def resnet_model_fn(features, labels, mode, model_class,
     train_op = None
 
   accuracy = tf.metrics.accuracy(labels, predictions['classes'])
-  accuracy_top_5 = tf.metrics.mean(tf.nn.in_top_k(predictions=logits,
-                                                  targets=labels,
-                                                  k=5,
-                                                  name='top_5_op'))
-  metrics = {'accuracy': accuracy,
-             'accuracy_top_5': accuracy_top_5}
+  metrics = {'accuracy': accuracy}
 
   # Create a tensor named train_accuracy for logging purposes
   tf.identity(accuracy[1], name='train_accuracy')
-  tf.identity(accuracy_top_5[1], name='train_accuracy_top_5')
   tf.summary.scalar('train_accuracy', accuracy[1])
-  tf.summary.scalar('train_accuracy_top_5', accuracy_top_5[1])
 
   return tf.estimator.EstimatorSpec(
       mode=mode,
