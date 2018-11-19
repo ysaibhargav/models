@@ -45,6 +45,7 @@ _SHUFFLE_BUFFER = 10000
 DATASET_NAME = 'ImageNet'
 
 """python imagenet_main.py --data_dir data/scratch/ --num_gpus 4"""
+"""python imagenet_main.py --data_dir data/scratch/ --num_gpus 1 --pretrained_model_checkpoint_path ckpts/resnet_imagenet_v2_fp32_20181001/model.ckpt-225207 --fine_tune True --resnet_version 2 --model_dir ~/tmp"""
 ###############################################################################
 # Data processing
 ###############################################################################

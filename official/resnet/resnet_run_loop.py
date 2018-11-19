@@ -417,13 +417,19 @@ def resnet_model_fn(features, labels, mode, model_class,
   else:
     train_op = None
   accuracy = tf.metrics.accuracy(labels, predictions['classes'])
-  #accuracy = tf.metrics.accuracy(tf.reshape(labels, [-1]),
-  #        tf.reshape(predictions['classes'], [-1]))
-  metrics = {'accuracy': accuracy}
+  predicted = tf.reshape(predictions['classes'], [-1])
+  actual = tf.reshape(labels, [-1])
+  precision = tf.metrics.precision(actual, predicted)
+  recall = tf.metrics.recall(actual, predicted)
+  metrics = {'accuracy': accuracy, 'precision': precision, 'recall': recall}
 
   # Create a tensor named train_accuracy for logging purposes
   tf.identity(accuracy[1], name='train_accuracy')
   tf.summary.scalar('train_accuracy', accuracy[1])
+  tf.identity(precision[1], name='train_precision')
+  tf.summary.scalar('train_precision', precision[1])
+  tf.identity(recall[1], name='train_recall')
+  tf.summary.scalar('train_recall', recall[1])
 
   return tf.estimator.EstimatorSpec(
       mode=mode,
