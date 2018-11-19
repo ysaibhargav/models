@@ -9,12 +9,12 @@ check_ingredients
 322.89118474104436
 
 else
-20369
-31.01659384358584
-315.24576648766157
+10719
+22.69381472152253
+169.6479084093916
 """
 
-check_ingredients = not False
+check_ingredients = False
 
 det_ingrs_path = 'det_ingrs.json'
 salad_id_path = 'salad1.txt'
