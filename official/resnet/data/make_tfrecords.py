@@ -118,7 +118,8 @@ def _convert_to_example(filename, image_buffer, ingrs, height, width):
       'image/width': _int64_feature(width),
       'image/colorspace': _bytes_feature(colorspace),
       'image/channels': _int64_feature(channels),
-      'image/class/label': _int64_feature(ingrs),
+      'image/ingrs': _int64_feature(ingrs),
+      'image/num_ingrs': _int64_feature(len(ingrs)),
       'image/format': _bytes_feature(image_format),
       'image/filename': _bytes_feature(os.path.basename(filename)),
       'image/encoded': _bytes_feature(image_buffer)}))
@@ -238,7 +239,7 @@ def _process_image(filename, coder):
   return image_data, height, width
 
 
-def _process_image_files_batch(coder, output_file, filenames, synsets, labels):
+def _process_image_files_batch(coder, output_file, filenames, pickles):
   """Processes and saves list of images as TFRecords.
 
   Args:
@@ -287,7 +288,7 @@ def _process_dataset(filenames, pickles, output_directory, prefix,
     output_file = os.path.join(
         output_directory, '%s-%.5d-of-%.5d' % (prefix, shard, num_shards))
     _process_image_files_batch(coder, output_file, chunk_files,
-                               chunk_synsets, labels)
+                               chunk_pickles)
     tf.logging.info('Finished writing file: %s' % output_file)
     files.append(output_file)
   return files
@@ -345,6 +346,7 @@ def convert_to_tf_records(raw_data_dir):
 def main(argv):  # pylint: disable=unused-argument
   tf.logging.set_verbosity(tf.logging.INFO)
 
+  raw_data_dir = FLAGS.raw_data_dir
   # Convert the raw data into tf-records
   training_records, validation_records = convert_to_tf_records(raw_data_dir)
 
