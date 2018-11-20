@@ -373,7 +373,7 @@ def resnet_model_fn(features, labels, mode, model_class,
           actual_ingrs = tf.convert_to_tensor(actual_ingrs)
 
           tf.summary.text('actual_ingredients', actual_ingrs)
-          tf.summary.text('predicted_ingredients', actual_ingrs)
+          tf.summary.text('predicted_ingredients', predicted_ingrs)
 
   if mode == tf.estimator.ModeKeys.PREDICT:
     # Return the predictions and the specification for serving a SavedModel
