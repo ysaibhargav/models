@@ -338,7 +338,7 @@ def resnet_model_fn(features, labels, mode, model_class,
   bool_preds = tf.cast(predictions['classes'], tf.bool)
   bool_labels = tf.cast(labels, tf.bool)
 
-  if mode == tf.estimator.ModeKeys.VALIDATION:
+  if mode == tf.estimator.ModeKeys.EVAL:
       with tf.device("/cpu:0"):
           vocab = tf.convert_to_tensor(vocab)
           multiply = tf.constant([32])
