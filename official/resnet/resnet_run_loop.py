@@ -341,16 +341,36 @@ def resnet_model_fn(features, labels, mode, model_class,
   if mode == tf.estimator.ModeKeys.EVAL:
       with tf.device("/cpu:0"):
           vocab = tf.convert_to_tensor(vocab)
+          """
           multiply = tf.constant([32])
           matrix = tf.reshape(tf.tile(vocab, multiply), [ multiply[0], tf.shape(vocab)[0] ])
 
           pred_ingrs = tf.boolean_mask(matrix, bool_preds)
           actual_ingrs = tf.boolean_mask(matrix, bool_labels)
 
+          #pred_ingrs = tf.split(pred_ingrs, tf.reduce_sum(predictions['classes'], -1))
+          #acutal_ingrs = tf.split(actual_ingrs, tf.reduce_sum(labels, -1))
+
           pred_ingrs = tf.map_fn(lambda x: tf.strings.reduce_join(x, separator=' | '),
             pred_ingrs, dtype=tf.string, infer_shape=False)
           actual_ingrs = tf.map_fn(lambda x: tf.strings.reduce_join(x, separator=' | '),
             actual_ingrs, dtype=tf.string, infer_shape=False)
+          """
+          partitions = tf.range(32)
+          num_partitions = 32
+          partitioned_preds = tf.dynamic_partition(bool_preds, partitions, num_partitions)
+          partitioned_labels = tf.dynamic_partition(bool_labels, partitions, num_partitions)
+
+          pred_ingrs = [tf.boolean_mask(vocab, tf.reshape(_p_preds, [-1]))
+            for _p_preds in partitioned_preds]
+          actual_ingrs = [tf.boolean_mask(vocab, tf.reshape(_p_labels, [-1]))
+            for _p_labels in partitioned_preds]
+
+          pred_ingrs = [tf.strings.reduce_join(x, separator = ' | ') for x in pred_ingrs]
+          actual_ingrs = [tf.strings.reduce_join(x, separator = ' | ') for x in actual_ingrs]
+
+          pred_ingrs = tf.convert_to_tensor(pred_ingrs)
+          actual_ingrs = tf.convert_to_tensor(actual_ingrs)
 
           tf.summary.text('actual_ingredients', actual_ingrs)
           tf.summary.text('predicted_ingredients', actual_ingrs)
