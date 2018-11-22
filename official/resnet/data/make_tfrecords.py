@@ -113,16 +113,30 @@ def _convert_to_example(filename, image_buffer, ingrs, height, width):
   channels = 3
   image_format = 'JPEG'
 
-  example = tf.train.Example(features=tf.train.Features(feature={
-      'image/height': _int64_feature(height),
-      'image/width': _int64_feature(width),
-      'image/colorspace': _bytes_feature(colorspace),
-      'image/channels': _int64_feature(channels),
-      'image/ingrs': _int64_feature(ingrs),
-      'image/num_ingrs': _int64_feature(len(ingrs)),
-      'image/format': _bytes_feature(image_format),
-      'image/filename': _bytes_feature(os.path.basename(filename)),
-      'image/encoded': _bytes_feature(image_buffer)}))
+  if len(ingrs) == 1:
+      example = tf.train.Example(features=tf.train.Features(feature={
+          'image/height': _int64_feature(height),
+          'image/width': _int64_feature(width),
+          'image/colorspace': _bytes_feature(colorspace),
+          'image/channels': _int64_feature(channels),
+          'image/ingrs': _int64_feature(ingrs),
+          'image/num_ingrs': _int64_feature(len(ingrs)),
+          'image/format': _bytes_feature(image_format),
+          'image/filename': _bytes_feature(os.path.basename(filename)),
+          'image/encoded': _bytes_feature(image_buffer)}))
+  else:
+      example = tf.train.Example(features=tf.train.Features(feature={
+          'image/height': _int64_feature(height),
+          'image/width': _int64_feature(width),
+          'image/colorspace': _bytes_feature(colorspace),
+          'image/channels': _int64_feature(channels),
+          'image/ingrs': _int64_feature(list(ingrs[0])),
+          'image/num_ingrs': _int64_feature(len(ingrs[0])),
+          'image/ingr_names': _bytes_feature(','.join(ingrs[1])),
+          'image/format': _bytes_feature(image_format),
+          'image/filename': _bytes_feature(os.path.basename(filename)),
+          'image/encoded': _bytes_feature(image_buffer)}))
+
   return example
 
 
@@ -253,7 +267,7 @@ def _process_image_files_batch(coder, output_file, filenames, pickles):
 
   for filename, _pickle in zip(filenames, pickles):
     image_buffer, height, width = _process_image(filename, coder)
-    ingrs = list(pickle.load(open(_pickle, 'rb')))
+    ingrs = (pickle.load(open(_pickle, 'rb')))
     example = _convert_to_example(filename, image_buffer,
                                   ingrs, height, width)
     writer.write(example.SerializeToString())

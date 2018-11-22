@@ -373,7 +373,7 @@ def resnet_model_fn(features, labels, mode, model_class,
           actual_ingrs = tf.convert_to_tensor(actual_ingrs)
 
           tf.summary.text('actual_ingredients', actual_ingrs)
-          tf.summary.text('predicted_ingredients', predicted_ingrs)
+          tf.summary.text('predicted_ingredients', pred_ingrs)
 
   if mode == tf.estimator.ModeKeys.PREDICT:
     # Return the predictions and the specification for serving a SavedModel
@@ -530,8 +530,10 @@ def resnet_main(
   else:
     warm_start_settings = None
 
-  PKL_PATH = 'data/salad1_vocab.pkl'
-  vocab, _ = pickle.load(open(PKL_PATH, 'rb'))
+  PKL_PATH = 'data/vocab_short_list.pkl'
+  vocab = pickle.load(open(PKL_PATH, 'rb'))
+  if len(vocab) == 2:
+      vocab = vocab[0]
   vocab = list(vocab)
   classifier = tf.estimator.Estimator(
       model_fn=model_function, model_dir=flags_obj.model_dir, config=run_config,
