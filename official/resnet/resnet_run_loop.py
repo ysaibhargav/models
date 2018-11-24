@@ -338,7 +338,7 @@ def resnet_model_fn(features, labels, mode, model_class,
   bool_preds = tf.cast(predictions['classes'], tf.bool)
   bool_labels = tf.cast(labels, tf.bool)
 
-  if mode == tf.estimator.ModeKeys.EVAL:
+  if True or mode == tf.estimator.ModeKeys.PREDICT:
       with tf.device("/cpu:0"):
           vocab = tf.convert_to_tensor(vocab)
           """
@@ -364,7 +364,7 @@ def resnet_model_fn(features, labels, mode, model_class,
           pred_ingrs = [tf.boolean_mask(vocab, tf.reshape(_p_preds, [-1]))
             for _p_preds in partitioned_preds]
           actual_ingrs = [tf.boolean_mask(vocab, tf.reshape(_p_labels, [-1]))
-            for _p_labels in partitioned_preds]
+            for _p_labels in partitioned_labels]
 
           pred_ingrs = [tf.strings.reduce_join(x, separator = ' | ') for x in pred_ingrs]
           actual_ingrs = [tf.strings.reduce_join(x, separator = ' | ') for x in actual_ingrs]
