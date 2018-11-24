@@ -314,7 +314,6 @@ def resnet_model_fn(features, labels, mode, model_class,
     current mode.
   """
 
-  labels = tf.cast(labels, dtype=tf.float32)
   # Generate a summary node for the images
   tf.summary.image('images', features, max_outputs=6)
   # Checks that features/images have same data type being used for calculations.
@@ -336,9 +335,10 @@ def resnet_model_fn(features, labels, mode, model_class,
   }
 
   bool_preds = tf.cast(predictions['classes'], tf.bool)
-  bool_labels = tf.cast(labels, tf.bool)
 
-  if True or mode == tf.estimator.ModeKeys.PREDICT:
+  if not mode == tf.estimator.ModeKeys.PREDICT:
+      labels = tf.cast(labels, dtype=tf.float32)
+      bool_labels = tf.cast(labels, tf.bool)
       with tf.device("/cpu:0"):
           vocab = tf.convert_to_tensor(vocab)
           """
@@ -381,7 +381,8 @@ def resnet_model_fn(features, labels, mode, model_class,
         mode=mode,
         predictions=predictions,
         export_outputs={
-            'predict': tf.estimator.export.PredictOutput(predictions)
+            'predict': tf.estimator.export.PredictOutput(predictions),
+            #'images': tf.estimator.export.PredictOutput(features)
         })
 
   # Calculate loss, which includes softmax cross entropy and L2 regularization.
@@ -623,6 +624,12 @@ def resnet_main(
                                        steps=flags_obj.max_train_steps)
 
     benchmark_logger.log_evaluation_result(eval_results)
+
+    if flags_obj.eval_only:
+      pred_results = classifier.predict(input_fn_eval)
+      pickle.dump(list(pred_results), open(os.path.join(flags_obj.model_dir,
+        'preds.pkl'), 'wb'))
+      return
 
     if model_helpers.past_stop_threshold(
         flags_obj.stop_threshold, eval_results['accuracy']):
