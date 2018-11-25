@@ -1,0 +1,2 @@
+Data without ignoring examples with 0 labels - TRAIN, VALIDATION, scratch (tfrecords)
+Data ignoring examples with 0 labels - TRAIN2, VALIDATION2, scratch2 (tfrecords)

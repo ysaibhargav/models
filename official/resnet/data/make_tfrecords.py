@@ -57,7 +57,7 @@ from absl import flags
 import tensorflow as tf
 
 flags.DEFINE_string(
-    'local_scratch_dir', 'scratch', 'Scratch directory path for temporary files.')
+    'local_scratch_dir', 'scratch2', 'Scratch directory path for temporary files.')
 flags.DEFINE_string(
     'raw_data_dir', '.', 'Directory path for raw Imagenet dataset. '
     'Should have train and validation subdirectories inside it.')
@@ -74,8 +74,8 @@ LABELS_FILE = 'synset_labels.txt'
 TRAINING_SHARDS = 1024
 VALIDATION_SHARDS = 128
 
-TRAINING_DIRECTORY = 'TRAIN'
-VALIDATION_DIRECTORY = 'VALIDATION'
+TRAINING_DIRECTORY = 'TRAIN2'
+VALIDATION_DIRECTORY = 'VALIDATION2'
 
 
 def _check_or_create_dir(directory):

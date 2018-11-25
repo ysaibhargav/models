@@ -6,12 +6,18 @@ import numpy as np
 
 VOCAB_PATH = 'ingrs_short_list.txt'
 SRC_IMG_PKL_PATH = 'salad1_id_to_img.pkl'
-TRAIN_PATH = 'TRAIN'
-VAL_PATH = 'VALIDATION'
+TRAIN_PATH = 'TRAIN2'
+VAL_PATH = 'VALIDATION2'
+if not os.path.exists(TRAIN_PATH):
+    os.makedirs(TRAIN_PATH)
+if not os.path.exists(VAL_PATH):
+    os.makedirs(VAL_PATH)
+
 IMG_PATH_PREFIX = 'train'
 cpy_imgs = True
+ignore_blank_examples = True
 
-val_data_pct = 0.1
+val_data_pct = 0.2
 
 det_ingrs_path = 'det_ingrs.json'
 salad_id_path = 'salad1.txt'
@@ -43,6 +49,8 @@ for recipe in parsed_json:
             if ingr in phrase_to_idx:
                 ingrs.extend(phrase_to_idx[ingr])
         ingrs = list(set(ingrs))
+        if ignore_blank_examples and len(ingrs) == 0:
+            continue
         ingrs = np.array(sorted(ingrs), dtype=np.int64)
         ingr_names = [vocab[i] for i in ingrs]
         img_paths = id_to_img_paths[Id]
