@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import glob
 import os
 from PIL import Image, ImageFont, ImageDraw
+from sklearn.metrics import precision_score, recall_score
 
 VOCAB_PKL_PATH = 'vocab_short_list.pkl'
 vocab = pickle.load(open(VOCAB_PKL_PATH, 'rb'))
@@ -59,9 +60,12 @@ with tf.Session() as sess:
     threads = tf.train.start_queue_runners(coord=coord)
 
     count = 0
+    ground_truth = []
+    predictions = [pred['classes'] for pred in preds]
     try:
         while True:
             dish, ingrs = sess.run([image, label])
+            ground_truth.append(ingrs)
             #plt.imshow(dish)
             #plt.savefig(os.path.join(OUT_PATH, '%04d.jpg'%(count)))
             #plt.close()
@@ -82,3 +86,44 @@ with tf.Session() as sess:
     finally:
         coord.request_stop()
         coord.join(threads)
+
+ground_truth = np.array(ground_truth, dtype=np.int32)
+predictions = np.array(predictions, dtype=np.int32)
+
+P = {}
+R = {}
+for i, word in enumerate(vocab):
+    y_true = ground_truth[:, i]
+    y_pred = predictions[:, i]
+    P[word] = precision_score(y_true, y_pred)
+    R[word] = recall_score(y_true, y_pred)
+
+true_f = np.mean(ground_truth, axis=0)
+pred_f = np.mean(predictions, axis=0)
+
+f = open(os.path.join(OUT_PATH, 'precision.txt'), 'w')
+sorted_p = sorted([(k, v) for k, v in P.items()], key=lambda x: -x[1])
+for item in sorted_p:
+    f.write('{}: {}\n'.format(item[0], item[1]))
+f.close()
+
+f = open(os.path.join(OUT_PATH, 'recall.txt'), 'w')
+sorted_r = sorted([(k, v) for k, v in R.items()], key=lambda x: -x[1])
+for item in sorted_r:
+    f.write('{}: {}\n'.format(item[0], item[1]))
+f.close()
+
+idx = np.arange(len(vocab))
+plt.bar(idx, true_f)
+plt.xticks(idx, vocab, rotation=45, fontsize=3)
+plt.ylabel('Frequency of occurrence')
+plt.title('Ground truth data')
+plt.savefig(os.path.join(OUT_PATH, 'true_f.png'), dpi=500)
+plt.close()
+
+plt.bar(idx, pred_f)
+plt.xticks(idx, vocab, rotation=45, fontsize=3)
+plt.ylabel('Frequency of occurrence')
+plt.title('Predicted data')
+plt.savefig(os.path.join(OUT_PATH, 'pred_f.png'), dpi=500)
+plt.close()
