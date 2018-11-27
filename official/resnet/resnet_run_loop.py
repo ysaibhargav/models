@@ -274,7 +274,7 @@ def resnet_model_fn(features, labels, mode, model_class,
                     resnet_size, weight_decay, learning_rate_fn, momentum,
                     data_format, resnet_version, loss_scale,
                     loss_filter_fn=None, dtype=resnet_model.DEFAULT_DTYPE,
-                    vocab=None, fine_tune=False):
+                    vocab=None, fine_tune=False, batch_size=32):
   """Shared functionality for different resnet model_fns.
 
   Initializes the ResnetModel representing the model layers
@@ -356,8 +356,8 @@ def resnet_model_fn(features, labels, mode, model_class,
           actual_ingrs = tf.map_fn(lambda x: tf.strings.reduce_join(x, separator=' | '),
             actual_ingrs, dtype=tf.string, infer_shape=False)
           """
-          partitions = tf.range(32)
-          num_partitions = 32
+          partitions = tf.range(batch_size)
+          num_partitions = batch_size
           partitioned_preds = tf.dynamic_partition(bool_preds, partitions, num_partitions)
           partitioned_labels = tf.dynamic_partition(bool_labels, partitions, num_partitions)
 

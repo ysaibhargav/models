@@ -9,6 +9,7 @@ import os
 from PIL import Image, ImageFont, ImageDraw
 from sklearn.metrics import precision_score, recall_score
 
+# TODO(sai): print model probabilities with the text
 VOCAB_PKL_PATH = 'vocab_short_list.pkl'
 vocab = pickle.load(open(VOCAB_PKL_PATH, 'rb'))
 if len(vocab) == 2:
