@@ -546,7 +546,8 @@ def resnet_main(
           'loss_scale': flags_core.get_loss_scale(flags_obj),
           'dtype': flags_core.get_tf_dtype(flags_obj),
           'vocab': vocab,
-          'fine_tune': flags_obj.fine_tune
+          'fine_tune': flags_obj.fine_tune,
+          'learning_rate': flags_obj.learning_rate
       })
 
   run_params = {
@@ -686,6 +687,10 @@ def define_resnet_flags(resnet_size_choices=None):
           'the expense of image resize/cropping being done as part of model '
           'inference. Note, this flag only applies to ImageNet and cannot '
           'be used for CIFAR.'))
+
+  flags.DEFINE_float(
+      name='learning_rate', default=0.128,
+      help=flags_core.help_wrap('The learning rate.'))
 
   choice_kwargs = dict(
       name='resnet_size', short_name='rs', default='50',
