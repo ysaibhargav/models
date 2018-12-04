@@ -20,25 +20,35 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import pickle
+import os
 import tensorflow as tf  # pylint: disable=g-bad-import-order
 
 from official.utils.logs import logger
 
 
 class FeaturesLoggerHook(tf.train.SessionRunHook):
-  def __init__(self):
-    pass
+  def __init__(self, use_train_data=False, model_dir=''):
+    self._step = 0
+    self.use_train_data = use_train_data
+    self._PKL_PATH = os.path.join(model_dir, 'train' if use_train_data else 'val')
+    if not os.path.exists(self._PKL_PATH):
+      os.makedirs(self._PKL_PATH)
+    self._PKL_PATH = os.path.join(self._PKL_PATH, 'features_%04d.pkl')
 
   def begin(self):
     pass
 
   def before_run(self, run_context):
     features = tf.get_default_graph().get_tensor_by_name("resnet_model/pre_pooling_features:0")
-    return tf.train.SessionRunArgs(features)
+    pred_ingrs = tf.get_default_graph().get_tensor_by_name("pred_ingrs:0")
+    actual_ingrs = tf.get_default_graph().get_tensor_by_name("actual_ingrs:0")
+    return tf.train.SessionRunArgs([features, pred_ingrs, actual_ingrs])
 
   def after_run(self, run_context, run_values):
-    features = run_values.results
-    import pdb; pdb.set_trace()
+    features, pred_ingrs, actual_ingrs = run_values.results
+    pickle.dump([features, pred_ingrs, actual_ingrs], open(self._PKL_PATH%(self._step), 'wb'))
+    self._step += 1
 
 
 class ExamplesPerSecondHook(tf.train.SessionRunHook):

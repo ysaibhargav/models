@@ -323,7 +323,7 @@ def resnet_model_fn(features, labels, mode, model_class,
   model = model_class(resnet_size, data_format, resnet_version=resnet_version,
                       dtype=dtype)
 
-  logits, features = model(features, mode == tf.estimator.ModeKeys.TRAIN)
+  logits, resnet_features = model(features, mode == tf.estimator.ModeKeys.TRAIN)
 
   # This acts as a no-op if the logits are already in fp32 (provided logits are
   # not a SparseTensor). If dtype is is low precision, logits must be cast to
@@ -370,8 +370,8 @@ def resnet_model_fn(features, labels, mode, model_class,
           pred_ingrs = [tf.strings.reduce_join(x, separator = ' | ') for x in pred_ingrs]
           actual_ingrs = [tf.strings.reduce_join(x, separator = ' | ') for x in actual_ingrs]
 
-          pred_ingrs = tf.convert_to_tensor(pred_ingrs)
-          actual_ingrs = tf.convert_to_tensor(actual_ingrs)
+          pred_ingrs = tf.convert_to_tensor(pred_ingrs, name='pred_ingrs')
+          actual_ingrs = tf.convert_to_tensor(actual_ingrs, name='actual_ingrs')
 
           tf.summary.text('actual_ingredients', actual_ingrs)
           tf.summary.text('predicted_ingredients', pred_ingrs)
@@ -383,7 +383,6 @@ def resnet_model_fn(features, labels, mode, model_class,
         predictions=predictions,
         export_outputs={
             'predict': tf.estimator.export.PredictOutput(predictions),
-            #'images': tf.estimator.export.PredictOutput(features)
         })
 
   # Calculate loss, which includes softmax cross entropy and L2 regularization.
@@ -573,7 +572,8 @@ def resnet_main(
   eval_hooks = hooks_helper.get_train_hooks(
       ['featuresloggerhook'],
       model_dir=flags_obj.model_dir,
-      batch_size=flags_obj.batch_size)
+      batch_size=flags_obj.batch_size,
+      use_train_data=flags_obj.use_train_data)
   if flags_obj.eval_only:
     train_hooks += eval_hooks
 
@@ -629,16 +629,21 @@ def resnet_main(
     # eval (which is generally unimportant in those circumstances) to terminate.
     # Note that eval will run for max_train_steps each loop, regardless of the
     # global_step count.
-    eval_results = classifier.evaluate(input_fn=input_fn_eval,
+    eval_input_fn = (lambda: input_fn_train(1, False)) if (flags_obj.eval_only and \
+        flags_obj.use_train_data) else input_fn_eval
+    eval_results = classifier.evaluate(input_fn=eval_input_fn,
                                        hooks=eval_hooks,
                                        steps=flags_obj.max_train_steps)
 
     benchmark_logger.log_evaluation_result(eval_results)
 
     if flags_obj.eval_only:
-      pred_results = classifier.predict(input_fn_eval)
+      pred_results = classifier.predict(eval_input_fn)
+      dir_name = 'train' if flags_obj.use_train_data else 'val'
+      if not os.path.exists(os.path.join(flags_obj.model_dir, dir_name)):
+        os.makedirs(os.path.join(flags_obj.model_dir, dir_name))
       pickle.dump(list(pred_results), open(os.path.join(flags_obj.model_dir,
-        'preds.pkl'), 'wb'))
+        dir_name, 'preds.pkl'), 'wb'))
       return
 
     if model_helpers.past_stop_threshold(
@@ -687,6 +692,9 @@ def define_resnet_flags(resnet_size_choices=None):
       name='eval_only', default=False,
       help=flags_core.help_wrap('Skip training and only perform evaluation on '
                                 'the latest checkpoint.'))
+  flags.DEFINE_boolean(
+      name='use_train_data', default=False,
+      help=flags_core.help_wrap('Use train data for eval'))
   flags.DEFINE_boolean(
       name='image_bytes_as_serving_input', default=False,
       help=flags_core.help_wrap(

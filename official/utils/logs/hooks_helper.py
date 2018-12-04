@@ -154,8 +154,8 @@ def get_logging_metric_hook(tensors_to_log=None,
       every_n_secs=every_n_secs)
 
 
-def get_features_logger_hook(**kwargs):
-  return hooks.FeaturesLoggerHook()
+def get_features_logger_hook(use_train_data=False, model_dir='', **kwargs):
+  return hooks.FeaturesLoggerHook(use_train_data=use_train_data, model_dir=model_dir)
 
 
 # A dictionary to map one hook name and its corresponding function
