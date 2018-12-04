@@ -139,7 +139,7 @@ def parse_record(raw_record, is_training, dtype):
 
 def input_fn(is_training, data_dir, batch_size, num_epochs=1,
              dtype=tf.float32, datasets_num_private_threads=None,
-             num_parallel_batches=1):
+             num_parallel_batches=1, shuffle=True):
   """Input function which provides batches for train or eval.
 
   Args:
@@ -157,7 +157,7 @@ def input_fn(is_training, data_dir, batch_size, num_epochs=1,
   filenames = get_filenames(is_training, data_dir)
   dataset = tf.data.Dataset.from_tensor_slices(filenames)
 
-  if is_training:
+  if is_training and shuffle:
     # Shuffle the input files
     dataset = dataset.shuffle(buffer_size=_NUM_TRAIN_FILES)
 
@@ -178,7 +178,8 @@ def input_fn(is_training, data_dir, batch_size, num_epochs=1,
       num_epochs=num_epochs,
       dtype=dtype,
       datasets_num_private_threads=datasets_num_private_threads,
-      num_parallel_batches=num_parallel_batches
+      num_parallel_batches=num_parallel_batches,
+      shuffle=shuffle
   )
 
 

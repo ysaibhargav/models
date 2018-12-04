@@ -154,8 +154,13 @@ def get_logging_metric_hook(tensors_to_log=None,
       every_n_secs=every_n_secs)
 
 
+def get_features_logger_hook(**kwargs):
+  return hooks.FeaturesLoggerHook()
+
+
 # A dictionary to map one hook name and its corresponding function
 HOOKS = {
+    'featuresloggerhook': get_features_logger_hook,
     'loggingtensorhook': get_logging_tensor_hook,
     'profilerhook': get_profiler_hook,
     'examplespersecondhook': get_examples_per_second_hook,

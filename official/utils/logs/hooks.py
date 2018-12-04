@@ -25,6 +25,22 @@ import tensorflow as tf  # pylint: disable=g-bad-import-order
 from official.utils.logs import logger
 
 
+class FeaturesLoggerHook(tf.train.SessionRunHook):
+  def __init__(self):
+    pass
+
+  def begin(self):
+    pass
+
+  def before_run(self, run_context):
+    features = tf.get_default_graph().get_tensor_by_name("resnet_model/pre_pooling_features:0")
+    return tf.train.SessionRunArgs(features)
+
+  def after_run(self, run_context, run_values):
+    features = run_values.results
+    import pdb; pdb.set_trace()
+
+
 class ExamplesPerSecondHook(tf.train.SessionRunHook):
   """Hook to print out examples per second.
 

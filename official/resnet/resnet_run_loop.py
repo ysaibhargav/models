@@ -56,7 +56,8 @@ def process_record_dataset(dataset,
                            num_epochs=1,
                            dtype=tf.float32,
                            datasets_num_private_threads=None,
-                           num_parallel_batches=1):
+                           num_parallel_batches=1,
+                           shuffle=True):
   """Given a Dataset with raw records, return an iterator over the records.
 
   Args:
@@ -81,7 +82,7 @@ def process_record_dataset(dataset,
   # Prefetches a batch at a time to smooth out the time taken to load input
   # files for shuffling and processing.
   dataset = dataset.prefetch(buffer_size=batch_size)
-  if is_training:
+  if is_training and shuffle:
     # Shuffles records before repeating to respect epoch boundaries.
     dataset = dataset.shuffle(buffer_size=shuffle_buffer)
 
@@ -322,7 +323,7 @@ def resnet_model_fn(features, labels, mode, model_class,
   model = model_class(resnet_size, data_format, resnet_version=resnet_version,
                       dtype=dtype)
 
-  logits = model(features, mode == tf.estimator.ModeKeys.TRAIN)
+  logits, features = model(features, mode == tf.estimator.ModeKeys.TRAIN)
 
   # This acts as a no-op if the logits are already in fp32 (provided logits are
   # not a SparseTensor). If dtype is is low precision, logits must be cast to
@@ -569,8 +570,14 @@ def resnet_main(
       flags_obj.hooks,
       model_dir=flags_obj.model_dir,
       batch_size=flags_obj.batch_size)
+  eval_hooks = hooks_helper.get_train_hooks(
+      ['featuresloggerhook'],
+      model_dir=flags_obj.model_dir,
+      batch_size=flags_obj.batch_size)
+  if flags_obj.eval_only:
+    train_hooks += eval_hooks
 
-  def input_fn_train(num_epochs):
+  def input_fn_train(num_epochs, shuffle=True):
     return input_function(
         is_training=True,
         data_dir=flags_obj.data_dir,
@@ -579,7 +586,8 @@ def resnet_main(
         num_epochs=num_epochs,
         dtype=flags_core.get_tf_dtype(flags_obj),
         datasets_num_private_threads=flags_obj.datasets_num_private_threads,
-        num_parallel_batches=flags_obj.datasets_num_parallel_batches)
+        num_parallel_batches=flags_obj.datasets_num_parallel_batches,
+        shuffle=shuffle)
 
   def input_fn_eval():
     return input_function(
@@ -622,6 +630,7 @@ def resnet_main(
     # Note that eval will run for max_train_steps each loop, regardless of the
     # global_step count.
     eval_results = classifier.evaluate(input_fn=input_fn_eval,
+                                       hooks=eval_hooks,
                                        steps=flags_obj.max_train_steps)
 
     benchmark_logger.log_evaluation_result(eval_results)
