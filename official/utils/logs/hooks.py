@@ -34,20 +34,21 @@ class FeaturesLoggerHook(tf.train.SessionRunHook):
     self._PKL_PATH = os.path.join(model_dir, 'train' if use_train_data else 'val')
     if not os.path.exists(self._PKL_PATH):
       os.makedirs(self._PKL_PATH)
-    self._PKL_PATH = os.path.join(self._PKL_PATH, 'features_%04d.pkl')
+    self._PKL_PATH = os.path.join(self._PKL_PATH, 'features_%05d.pkl')
 
   def begin(self):
     pass
 
   def before_run(self, run_context):
+    images = tf.get_default_graph().get_tensor_by_name("IteratorGetNext:0")
     features = tf.get_default_graph().get_tensor_by_name("resnet_model/pre_pooling_features:0")
     pred_ingrs = tf.get_default_graph().get_tensor_by_name("pred_ingrs:0")
     actual_ingrs = tf.get_default_graph().get_tensor_by_name("actual_ingrs:0")
-    return tf.train.SessionRunArgs([features, pred_ingrs, actual_ingrs])
+    return tf.train.SessionRunArgs([images, features, pred_ingrs, actual_ingrs])
 
   def after_run(self, run_context, run_values):
-    features, pred_ingrs, actual_ingrs = run_values.results
-    pickle.dump([features, pred_ingrs, actual_ingrs], open(self._PKL_PATH%(self._step), 'wb'))
+    images, features, pred_ingrs, actual_ingrs = run_values.results
+    pickle.dump([images, features, pred_ingrs, actual_ingrs], open(self._PKL_PATH%(self._step), 'wb'))
     self._step += 1
 
 

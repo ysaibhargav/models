@@ -20,7 +20,7 @@ vocab = np.array(vocab)
 _NUM_CLASSES = 87
 assert _NUM_CLASSES == len(vocab)
 
-PRED_PKL_PATH = '/home/syalaman/tmp/preds.pkl'
+PRED_PKL_PATH = '/home/syalaman/random1/val/preds.pkl'
 preds = pickle.load(open(PRED_PKL_PATH, 'rb'))
 
 DATA_PATH = glob.glob('scratch/VALIDATION/*')
