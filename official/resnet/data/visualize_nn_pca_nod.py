@@ -4,7 +4,7 @@ import numpy as np
 import random
 #import matplotlib.pyplot as plt
 import collections
-from PIL import Image
+from PIL import Image, ImageDraw
 import json
 import cv2
 from scipy.spatial import cKDTree
@@ -225,8 +225,12 @@ def fromDownsampledCoordToImagePatch(source, id, x, y):
         img_y_up = max(0, img_y - ENLARGE_RATE * 8)
         img_y_down = min(actual_h, img_y + ENLARGE_RATE * 8)
         #print('cropping at src ', (img_x_left, img_y_up, img_x_right, img_y_down))
-        return Image.open(source_names[id]).resize((224, 224)) \
-                .crop((img_x_left, img_y_up, img_x_right, img_y_down))
+        im = Image.open(source_names[id]).resize((224, 224))
+        draw = ImageDraw.Draw(im)
+        draw.rectangle([img_x_left, img_y_up, img_x_right, img_y_down])
+        return im
+        #return Image.open(source_names[id]).resize((224, 224)) \
+        #        .crop((img_x_left, img_y_up, img_x_right, img_y_down))
     else:
         img_x = math.floor(float(x+0.5) / target_w * (actual_w))
         img_y = math.floor(float(y+0.5) / target_h * (actual_h))
@@ -235,8 +239,12 @@ def fromDownsampledCoordToImagePatch(source, id, x, y):
         img_y_up = max(0, img_y - ENLARGE_RATE * 8)
         img_y_down = min(actual_h, img_y + ENLARGE_RATE * 8)
         #print('cropping at tar ', (img_x_left, img_y_up, img_x_right, img_y_down))
-        return Image.open(target_names[id]).resize((224, 224)) \
-                .crop((img_x_left, img_y_up, img_x_right, img_y_down))
+        im = Image.open(target_names[id]).resize((224, 224))
+        draw = ImageDraw.Draw(im)
+        draw.rectangle([img_x_left, img_y_up, img_x_right, img_y_down])
+        return im
+        #return Image.open(target_names[id]).resize((224, 224)) \
+        #        .crop((img_x_left, img_y_up, img_x_right, img_y_down))
 
 def fromDownsampledCoordToSrcLabels(ids, xs, ys):
     labels = []

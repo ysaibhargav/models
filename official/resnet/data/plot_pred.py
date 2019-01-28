@@ -20,20 +20,22 @@ vocab = np.array(vocab)
 _NUM_CLASSES = 87
 assert _NUM_CLASSES == len(vocab)
 
-PRED_PKL_PATH = '/home/syalaman/random1/val/preds.pkl'
+PRED_PKL_ROOT = '/home/syalaman/random/val'
+PRED_PKL_PATH = os.path.join(PRED_PKL_ROOT, 'preds.pkl')
 preds = pickle.load(open(PRED_PKL_PATH, 'rb'))
 
 DATA_PATH = glob.glob('scratch/VALIDATION/*')
 DATA_PATH = sorted(DATA_PATH)
 
-OUT_PATH = 'results'
+OUT_PATH = os.path.join(PRED_PKL_ROOT, 'results')
 if not os.path.exists(OUT_PATH):
     os.makedirs(OUT_PATH)
 
 #font = ImageFont.truetype('Roboto-Bold.ttf', size=25)
 (x1, y1) = (10, 10)
 (x2, y2) = (150, 10)
-color = 'rgb(255, 0, 0)'
+color1 = 'rgb(255, 0, 0)'
+color2 = 'rgb(0, 0, 255)'
 
 with tf.Session() as sess:
     feature_map = {
@@ -63,6 +65,7 @@ with tf.Session() as sess:
     count = 0
     ground_truth = []
     predictions = [pred['classes'] for pred in preds]
+    probabilities = [pred['probabilities'] for pred in preds]
     try:
         while True:
             dish, ingrs = sess.run([image, label])
@@ -71,13 +74,15 @@ with tf.Session() as sess:
             #plt.savefig(os.path.join(OUT_PATH, '%04d.jpg'%(count)))
             #plt.close()
             pred = np.array(preds[count]['classes'], dtype=bool)
+            probs = np.array(preds[count]['probabilities'], dtype=float)
             #with open(os.path.join(OUT_PATH, '%04d.txt'%(count)), 'w') as f:
             #    f.write(', '.join(vocab[pred]) + '\n')
             #    f.write(', '.join(vocab[ingrs]))
             im = Image.fromarray(dish)
             draw = ImageDraw.Draw(im)
-            draw.text((x1, y1), '\n'.join(vocab[pred]), fill=color)#, font=font)
-            draw.text((x2, y2), '\n'.join(vocab[ingrs]), fill=color)#, font=font)
+            text1 = '\n'.join('{} : {:.2f}'.format(_v, float(_p)) for _v, _p in (zip(vocab[pred], probs[pred])))
+            draw.text((x1, y1), text1, fill=color1)#, font=font)
+            draw.text((x2, y2), '\n'.join(vocab[ingrs]), fill=color2)#, font=font)
             im.save(os.path.join(OUT_PATH, '%04d.jpg'%(count)))
 
             print count
